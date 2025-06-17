@@ -80,8 +80,7 @@ export default {
 
         // Common headers for Cloudflare API requests
         const headers = {
-            'X-Auth-Email': email,
-            'X-Auth-Key': apiKey,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
         };
 
