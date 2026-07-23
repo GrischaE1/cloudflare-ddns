@@ -1,43 +1,85 @@
 # cloudflare-ddns
+
 Cloudflare DDNS for QNAP and Synology NAS and other Linux systems. Based on Cloudflare Worker or other Serverless functions.
 
-With this small but nice interface, it is possible to host your own api to use Cloudflare domains for your DynDNS on QNAP or Synology NAS systems
+With this small interface, it is possible to host your own API to use Cloudflare domains for DynDNS on QNAP or Synology NAS systems.
 
-The API responds with JSON and matching status codes for QNAP and Synology systems
-
+The API responds with JSON and matching status codes for QNAP and Synology systems.
 
 ------------
 
+## Authentication
+
+This Worker supports two Cloudflare authentication methods:
+
+1. **API Token (recommended):** create a token with `Zone > DNS > Edit` permission and limit it to the zone you want to update. Supply it as `api_token`.
+2. **Global API Key (legacy):** supply your Cloudflare account `email` together with `api_key`. This remains available for existing deployments, but it has broad account permissions and is not recommended for new deployments.
+
+See Cloudflare's [API authentication documentation](https://developers.cloudflare.com/api/resources/user/methods/edit/) for the two header schemes.
+
 Required information:
-- Cloudflare Account email
-- Cloudflare [Global API Key](https://dash.cloudflare.com/profile/api-tokens "Global API Key") *(not Origin CA Key)* 
+
+- Cloudflare API Token **or** Cloudflare Account email and [Global API Key](https://dash.cloudflare.com/profile/api-tokens) *(not Origin CA Key)*
 - Cloudflare registered domain *(like `example.com`)*
 - DNS Record *(like `my-ddns.example.com`)*
 
 ------------
+
 ## Cloudflare Worker
+
 ### Setup
-1. Go to [Cloudflare Workers](https://workers.cloudflare.com/) and create a new Worker
-2. Copy the content of `worker.js` into the editor
-3. Click `Save and Deploy`
+
+1. Go to [Cloudflare Workers](https://workers.cloudflare.com/) and create a new Worker.
+2. Copy the content of `worker.js` into the editor.
+3. Click `Save and Deploy`.
+
 ## Usage
+
+### API Token (recommended)
+
+Use `api_token` without the `email` parameter:
+
+```
+https://your.cloudflare.worker.host/route/to/worker?api_token=YOUR_API_TOKEN&record=my-ddns.example.com&ip=YOUR_IP&ttl=120
+```
+
+> Tokens in URL query strings can be captured by logs. Use a narrowly scoped token, do not share the URL, and rotate the token if it may have been exposed.
+
+### Global API Key (legacy compatibility)
+
+Existing clients can continue using the original `email` and `api_key` parameters:
+
+```
+https://your.cloudflare.worker.host/route/to/worker?email=cloudflare@email.com&api_key=YOUR_GLOBAL_API_KEY&record=my-ddns.example.com&ip=YOUR_IP&ttl=120
+```
+
 ### DynDNS for QNAP NAS
+
 `Network- and Virtual Switch` -> `DDNS` -> `Add` -> `Select DNS server: Customized`
 
 ![QNAP DDNS](https://raw.githubusercontent.com/lmxx1234567/cloudflare-ddns/main/images/qnap-ddns.png "QNAP DDNS")
 
-- Username: Your Cloudflare Account email
-- Password: Your Cloudflare Global API Key
-- Hostname: Your DNS Record *(like `my-ddns.example.com`)*
-- URL: Tell your QNAP how to assemble the URL *(see below)*
+For the recommended API Token configuration:
+
+- Username: any non-empty value (it is not sent to the Worker)
+- Password: your Cloudflare API Token
+- Hostname: your DNS Record *(like `my-ddns.example.com`)*
+- URL:
+
+```
+https://your.cloudflare.worker.host/route/to/worker?api_token=%PASS%&record=%HOST%&ip=%IP%&ttl=120
+```
+
+For Global API Key compatibility, set Username to your Cloudflare Account email, Password to your Global API Key, and use:
 
 ```
 https://your.cloudflare.worker.host/route/to/worker?email=%USER%&api_key=%PASS%&record=%HOST%&ip=%IP%&ttl=120
 ```
-if you use cloudfare worker default host. the route is `\`
+
 ------------
 
 ### DynDNS for Synology NAS
+
 `System Controls` -> `External Access` -> `Customize`
 
 ![Synology DDNS Provider](https://raw.githubusercontent.com/fbrettnich/cloudflare-dyndns-php/main/.github/images/synology-ddns-provider.png "Synology DDNS Provider")
@@ -46,32 +88,49 @@ if you use cloudfare worker default host. the route is `\`
 
 ![Synology DDNS](https://raw.githubusercontent.com/fbrettnich/cloudflare-dyndns-php/main/.github/images/synology-ddns.png "Synology DDNS")
 
+API Token URL:
+
+```
+https://your.cloudflare.worker.host/route/to/worker?api_token=__PASSWORD__&record=__HOSTNAME__&ip=__MYIP__&ttl=120
+```
+
+Legacy Global API Key URL:
+
 ```
 https://your.cloudflare.worker.host/route/to/worker?email=__USERNAME__&api_key=__PASSWORD__&record=__HOSTNAME__&ip=__MYIP__&ttl=120
 ```
+
 ------------
 
 ### DynDNS for Linux
-cURL Command
+
+API Token cURL command:
+
+```bash
+curl 'https://your.cloudflare.worker.host/route/to/worker?api_token=YOUR_API_TOKEN&record=my-ddns.example.com&ip=$(curl -s https://ipinfo.io/ip)&ttl=120'
+```
+
+Legacy Global API Key cURL command:
+
 ```bash
 curl 'https://your.cloudflare.worker.host/route/to/worker?email=cloudflare@email.com&api_key=XXXX&record=my-ddns.example.com&ip=$(curl -s https://ipinfo.io/ip)&ttl=120'
 ```
 
-Cronjob *every 5 minutes*
-```bash
-*/5 * * * * curl 'https://your.cloudflare.worker.host/route/to/worker?email=cloudflare@email.com&api_key=XXXX&record=my-ddns.example.com&ip=$(curl -s https://ipinfo.io/ip)&ttl=120' >/dev/null 2>&1
-```
+To get your public IP address, you can use:
 
-To get your public IP address you can use the following cURL command:
 ```bash
 curl https://ipinfo.io/ip
 ```
+
 ## TODO
+
 - [x] Add support for custom DNS settings like `proxied` or `auto_ttl`
 - [ ] Add support for automatic SSL certificate renewal
 
 ## License
+
 [MIT](LICENSE)
 
 ## Credits
-This project is inspire by [fbrettnich/cloudflare-dyndns-php](https://github.com/fbrettnich/cloudflare-dyndns-php). We ported the PHP code to Cloudflare Worker to make it more scalable and easier to use.
+
+This project is inspired by [fbrettnich/cloudflare-dyndns-php](https://github.com/fbrettnich/cloudflare-dyndns-php). We ported the PHP code to Cloudflare Worker to make it more scalable and easier to use.
