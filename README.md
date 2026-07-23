@@ -12,7 +12,7 @@ The API responds with JSON and matching status codes for QNAP and Synology syste
 
 This Worker supports two Cloudflare authentication methods:
 
-1. **API Token (recommended):** create a token with `Zone > DNS > Edit` permission and limit it to the zone you want to update. Supply it as `api_token`.
+1. **API Token (recommended):** create a token with `Zone > Zone > Read` and `Zone > DNS > Edit` permissions, and limit it to the zone you want to update. Supply it as `api_token`.
 2. **Global API Key (legacy):** supply your Cloudflare account `email` together with `api_key`. This remains available for existing deployments, but it has broad account permissions and is not recommended for new deployments.
 
 See Cloudflare's [API authentication documentation](https://developers.cloudflare.com/api/resources/user/methods/edit/) for the two header schemes.
