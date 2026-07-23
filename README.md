@@ -4,7 +4,7 @@ Cloudflare DDNS for QNAP and Synology NAS and other Linux systems. Based on Clou
 
 With this small interface, it is possible to host your own API to use Cloudflare domains for DynDNS on QNAP or Synology NAS systems.
 
-The API responds with JSON and matching status codes for QNAP and Synology systems.
+The API responds with plain text and matching status codes for QNAP and Synology systems.
 
 ------------
 
@@ -12,10 +12,10 @@ The API responds with JSON and matching status codes for QNAP and Synology syste
 
 This Worker supports two Cloudflare authentication methods:
 
-1. **API Token (recommended):** create a token with `Zone > Zone > Read` and `Zone > DNS > Edit` permissions, and limit it to the zone you want to update. Supply it as `api_token`.
+1. **API Token (recommended):** create a token with `Zone > Zone > Read` and `Zone > DNS > Edit` permissions, and limit it to the zone you want to update. Send it in an `Authorization: Bearer <token>` header, or use `api_token` for NAS clients that cannot send headers.
 2. **Global API Key (legacy):** supply your Cloudflare account `email` together with `api_key`. This remains available for existing deployments, but it has broad account permissions and is not recommended for new deployments.
 
-See Cloudflare's [API authentication documentation](https://developers.cloudflare.com/api/resources/user/methods/edit/) for the two header schemes.
+See Cloudflare's [API authentication guide](https://developers.cloudflare.com/fundamentals/api/get-started/) for the two authentication schemes.
 
 Required information:
 
@@ -37,7 +37,14 @@ Required information:
 
 ### API Token (recommended)
 
-Use `api_token` without the `email` parameter:
+Prefer the `Authorization` header so the token is not part of the URL:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_TOKEN" \
+  'https://your.cloudflare.worker.host/route/to/worker?record=my-ddns.example.com&ip=YOUR_IP&ttl=120'
+```
+
+For NAS clients that cannot send request headers, use `api_token` without the `email` parameter:
 
 ```
 https://your.cloudflare.worker.host/route/to/worker?api_token=YOUR_API_TOKEN&record=my-ddns.example.com&ip=YOUR_IP&ttl=120

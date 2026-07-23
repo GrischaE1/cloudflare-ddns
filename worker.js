@@ -66,10 +66,13 @@ export default {
         const params = url.searchParams;
 
         // Extract parameters from the request.
-        // api_token is preferred. email + api_key remains supported for existing users.
+        // An Authorization header is preferred. api_token remains supported for NAS clients.
+        // email + api_key remains supported for existing users.
         const email = params.get('email');
         const apiKey = params.get('api_key');
-        const apiToken = params.get('api_token');
+        const authHeader = request.headers.get('Authorization') || '';
+        const headerTokenMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+        const apiToken = headerTokenMatch?.[1] || params.get('api_token');
         let record = params.get('record');
         const ip = params.get('ip');
         const ttl = params.get('ttl') || '1'; // Setting to 1 means 'automatic'.
@@ -77,7 +80,10 @@ export default {
 
         // Validate input and require either an API Token or the legacy API key credentials.
         if (!record || !ip || (!apiToken && (!email || !apiKey))) {
-            return new Response('Missing required parameters', { status: 400 });
+            return new Response(
+                'Missing required parameters: record, ip, and either API Token or (email and api_key)',
+                { status: 400 }
+            );
         }
 
         // API Tokens use Bearer authentication. The legacy Global API Key requires both headers.
