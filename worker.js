@@ -65,24 +65,32 @@ export default {
         const url = new URL(request.url);
         const params = url.searchParams;
 
-        // Extract parameters from the request
+        // Extract parameters from the request.
+        // api_token is preferred. email + api_key remains supported for existing users.
         const email = params.get('email');
         const apiKey = params.get('api_key');
+        const apiToken = params.get('api_token');
         let record = params.get('record');
         const ip = params.get('ip');
         const ttl = params.get('ttl') || '1'; // Setting to 1 means 'automatic'.
         const proxied = params.get('proxied') || 'false';
 
-        // Validate input
-        if (!email || !apiKey || !record || !ip) {
+        // Validate input and require either an API Token or the legacy API key credentials.
+        if (!record || !ip || (!apiToken && (!email || !apiKey))) {
             return new Response('Missing required parameters', { status: 400 });
         }
 
-        // Common headers for Cloudflare API requests
-        const headers = {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-        };
+        // API Tokens use Bearer authentication. The legacy Global API Key requires both headers.
+        const headers = apiToken
+            ? {
+                'Authorization': `Bearer ${apiToken}`,
+                'Content-Type': 'application/json'
+            }
+            : {
+                'X-Auth-Email': email,
+                'X-Auth-Key': apiKey,
+                'Content-Type': 'application/json'
+            };
 
         try {
             // Get the domain from the record
